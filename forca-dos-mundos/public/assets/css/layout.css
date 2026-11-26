@@ -1,0 +1,222 @@
+/* =========================================================
+   LAYOUT: casca do app (sidebar + topo) para jogador e admin
+   ========================================================= */
+.shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+}
+
+.sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 24px 18px;
+    background: rgba(9, 13, 38, 0.82);
+    border-right: 1px solid var(--borda);
+    backdrop-filter: blur(14px);
+    z-index: 50;
+}
+
+.sidebar-logo {
+    text-decoration: none;
+    padding: 0 8px;
+}
+
+.selo-admin {
+    margin: -8px 8px 0;
+    padding: 4px 12px;
+    align-self: flex-start;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ouro);
+    border: 1px solid rgba(245, 199, 107, 0.4);
+    border-radius: 99px;
+    background: rgba(245, 199, 107, 0.08);
+}
+
+.menu {
+    display: grid;
+    gap: 6px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--suave);
+    font: 700 0.95rem var(--fonte-texto);
+    text-decoration: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 0.18s;
+}
+
+.menu-item svg {
+    width: 21px;
+    height: 21px;
+    flex-shrink: 0;
+}
+
+.menu-item:hover {
+    color: var(--texto);
+    background: var(--vidro);
+    transform: translateX(3px);
+}
+
+.menu-item.ativo {
+    color: #fff;
+    background: linear-gradient(90deg, rgba(124, 92, 255, 0.4), rgba(124, 92, 255, 0.08));
+    border-color: rgba(124, 92, 255, 0.5);
+    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.2);
+}
+
+.menu-admin {
+    color: var(--ouro);
+    margin-top: 10px;
+    border-top: 1px dashed var(--borda);
+    border-radius: 0 0 13px 13px;
+}
+
+.sidebar-rodape {
+    margin-top: auto;
+}
+
+.form-sair {
+    margin: 0;
+}
+
+.menu-sair:hover {
+    color: var(--perigo);
+}
+
+.coluna {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 32px;
+    background: rgba(7, 11, 30, 0.7);
+    border-bottom: 1px solid var(--borda);
+    backdrop-filter: blur(12px);
+}
+
+.topbar-titulo {
+    font: 800 1.1rem var(--fonte-titulo);
+    letter-spacing: 0.04em;
+}
+
+.topbar-acoes {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.topbar-perfil {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 14px 4px 4px;
+    border-radius: 99px;
+    border: 1px solid var(--borda);
+    background: var(--vidro);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.pagina {
+    padding: 30px 32px 60px;
+    display: grid;
+    gap: 28px;
+    align-content: start;
+    max-width: 1180px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.menu-toggle,
+.sidebar-fundo {
+    display: none;
+}
+
+/* Som: alterna os dois ícones conforme o estado */
+.som-off { display: none; }
+.som-desligado .som-on { display: none; }
+.som-desligado .som-off { display: block; }
+
+@media (max-width: 900px) {
+    .shell {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 270px;
+        transform: translateX(-105%);
+        transition: transform 0.3s ease;
+    }
+
+    .menu-aberto .sidebar {
+        transform: none;
+    }
+
+    .sidebar-fundo {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 45;
+        background: rgba(3, 5, 18, 0.6);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .menu-aberto .sidebar-fundo {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .menu-toggle {
+        display: grid;
+    }
+
+    .topbar {
+        padding: 12px 16px;
+    }
+
+    .topbar-perfil span {
+        display: none;
+    }
+
+    .topbar-perfil {
+        padding: 3px;
+    }
+
+    .pagina {
+        padding: 20px 16px 50px;
+    }
+}

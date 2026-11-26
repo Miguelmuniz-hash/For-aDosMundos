@@ -1,238 +1,181 @@
 <?php
-declare(strict_types=1);
-
 namespace App\Controllers;
 
-use App\Core\Auth;
 use App\Core\Controller;
-use App\Core\Csrf;
-use App\Core\Session;
 use App\Models\Categoria;
 use App\Models\Palavra;
 use App\Models\Partida;
+use App\Services\ForcaJogo;
 
-final class GameController extends Controller
+/**
+ * Partida da forca. Toda decisão (acerto, erro, vitória, derrota, pontos)
+ * acontece aqui no PHP; o estado fica na sessão e a palavra nunca vai para o HTML.
+ */
+class GameController extends Controller
 {
-    private const MAX_ERROS = 6;
-
-    /** GET /jogo/{categoriaId} -> sorteia palavra e abre a partida */
-    public function iniciar(int|string $categoriaId): void
+    /** Começa uma partida na categoria escolhida. */
+    public function iniciar(): void
     {
-        $catId = (int) $categoriaId;
-        $categoria = Categoria::find($catId);
+        $usuario = $this->exigirLogin();
+        $categoriaId = (int) $this->post('categoria_id');
 
-        if (!$categoria || $categoria['status'] !== 'ativa') {
-            $this->erro('Categoria inválida ou inativa.');
-            $this->redirect('dashboard');
+        $categoria = (new Categoria())->buscarPorId($categoriaId);
+        if (!$categoria || $categoria['status'] !== 'ativo') {
+            flash('erro', 'Esse mundo não está disponível.');
+            $this->redirect('/mundos');
         }
 
-        $palavraObj = Palavra::sortearPorCategoria($catId);
-        if (!$palavraObj) {
-            $this->erro('Esta categoria ainda não possui palavras cadastradas.');
-            $this->redirect('dashboard');
+        // Se havia uma partida aberta, ela termina como derrota (evita "pular" palavras difíceis).
+        if (!empty($_SESSION['jogo'])) {
+            $this->finalizar($usuario, $_SESSION['jogo'], true);
         }
 
-        $palavra = mb_strtoupper(trim($palavraObj['palavra']));
+        $evitar = (int) ($_SESSION['ultima_palavra'] ?? 0);
+        $palavra = (new Palavra())->sortear($categoriaId, $evitar);
+        if (!$palavra) {
+            flash('erro', 'Este mundo ainda não tem palavras cadastradas.');
+            $this->redirect('/mundos');
+        }
 
-        Session::set('partida_atual', [
-            'categoria_id'   => $catId,
-            'categoria_nome' => $categoria['nome'],
-            'palavra_id'     => (int) $palavraObj['id'],
-            'palavra'        => $palavra,
-            'dica'           => $palavraObj['dica'],
-            'letras_certas'  => [],
-            'letras_erradas' => [],
-            'erros'          => 0,
-            'usou_revelar'   => false,
-            'finalizada'     => false,
-            'partida_id'     => null,
-        ]);
-
-        $this->redirect('jogo');
+        unset($_SESSION['resultado']);
+        $_SESSION['jogo'] = ForcaJogo::novoEstado($palavra);
+        $_SESSION['ultima_palavra'] = (int) $palavra['id'];
+        $this->redirect('/jogo');
     }
 
-    /** GET /jogo -> exibe a partida em andamento */
-    public function index(): void
+    /** Tela da partida (sem revelar a palavra). */
+    public function jogar(): void
     {
-        $jogo = Session::get('partida_atual');
-        if (!$jogo) {
-            $this->erro('Nenhuma partida em andamento. Escolha um mundo para jogar.');
-            $this->redirect('dashboard');
+        $usuario = $this->exigirLogin();
+        $estado = $_SESSION['jogo'] ?? null;
+        if (!$estado) {
+            flash('info', 'Escolha um mundo para começar uma partida.');
+            $this->redirect('/mundos');
         }
 
-        if (!empty($jogo['finalizada']) && !empty($jogo['partida_id'])) {
-            $this->redirect('jogo/resultado/' . $jogo['partida_id']);
-        }
+        [$acertos, $erradas] = ForcaJogo::classificarLetras($estado);
+        $categoria = (new Categoria())->buscarPorId($estado['categoria_id']);
 
-        $this->view('game/index', [
-            'titulo' => 'Jogando: ' . $jogo['categoria_nome'] . ' - Força dos Mundos',
-            'estado' => $this->montarEstadoPublico($jogo),
-        ]);
+        $this->render('game/jogo', [
+            'titulo'    => 'Partida',
+            'pagina'    => 'mundos',
+            'categoria' => $categoria,
+            'dica'      => $estado['dica'],
+            'mascara'   => ForcaJogo::mascara($estado),
+            'erros'     => $estado['erros'],
+            'maxErros'  => ForcaJogo::MAX_ERROS,
+            'acertos'   => $acertos,
+            'erradas'   => $erradas,
+            'progresso' => ForcaJogo::progresso($estado),
+            'usuario'   => $usuario,
+        ], 'game');
     }
 
-    /** POST /jogo/letra -> recebe letra via JSON, valida no PHP e retorna novo estado */
+    /** Recebe uma letra (via fetch/JSON ou formulário comum). */
     public function letra(): void
     {
-        Csrf::verifyOrFail();
+        $usuario = $this->exigirLogin();
+        $estado = $_SESSION['jogo'] ?? null;
+        $json = self::querJson();
 
-        $jogo = Session::get('partida_atual');
-        if (!$jogo || !empty($jogo['finalizada'])) {
-            $this->json(['erro' => 'Nenhuma partida ativa encontrada.'], 400);
+        if (!$estado) {
+            if ($json) {
+                $this->json(['ok' => false, 'mensagem' => 'Nenhuma partida em andamento.', 'redirect' => url('/mundos')], 409);
+            }
+            $this->redirect('/mundos');
         }
 
-        $input = json_decode((string) file_get_contents('php://input'), true);
-        $letra = mb_strtoupper(trim((string) ($input['letra'] ?? $_POST['letra'] ?? '')));
+        [$sucesso, $mensagem, $acertou, $posicoes] = ForcaJogo::tentarLetra($estado, $this->post('letra'));
+        $_SESSION['jogo'] = $estado;
 
-        if (!preg_match('/^[A-Z]$/', $letra)) {
-            $this->json(['erro' => 'Letra inválida.'], 422);
+        if (!$sucesso) {
+            if ($json) {
+                $this->json(['ok' => false, 'mensagem' => $mensagem], 422);
+            }
+            flash('erro', $mensagem);
+            $this->redirect('/jogo');
         }
 
-        if (in_array($letra, $jogo['letras_certas'], true) || in_array($letra, $jogo['letras_erradas'], true)) {
-            $this->json(['erro' => 'Letra já utilizada.'], 422);
+        $terminou = $estado['status'] !== 'andamento';
+        if ($terminou) {
+            $this->finalizar($usuario, $estado, false);
         }
 
-        $letrasPalavra = str_split($jogo['palavra']);
-
-        if (in_array($letra, $letrasPalavra, true)) {
-            $jogo['letras_certas'][] = $letra;
-        } else {
-            $jogo['letras_erradas'][] = $letra;
-            $jogo['erros']++;
+        if ($json) {
+            $this->json([
+                'ok'        => true,
+                'acertou'   => $acertou,
+                'posicoes'  => $posicoes,
+                'erros'     => $estado['erros'],
+                'restantes' => ForcaJogo::MAX_ERROS - $estado['erros'],
+                'status'    => $estado['status'],
+                'progresso' => ForcaJogo::progresso($estado),
+                'redirect'  => $terminou ? url('/jogo/resultado') : null,
+            ]);
         }
-
-        $jogo = $this->verificarEncerramento($jogo);
-        Session::set('partida_atual', $jogo);
-
-        $this->json($this->montarEstadoPublico($jogo));
+        $this->redirect($terminou ? '/jogo/resultado' : '/jogo');
     }
 
-    /** POST /jogo/revelar -> revela 1 letra aleatória ainda oculta (-30 pts) */
-    public function revelar(): void
-    {
-        Csrf::verifyOrFail();
-
-        $jogo = Session::get('partida_atual');
-        if (!$jogo || !empty($jogo['finalizada'])) {
-            $this->json(['erro' => 'Nenhuma partida ativa encontrada.'], 400);
-        }
-
-        if (!empty($jogo['usou_revelar'])) {
-            $this->json(['erro' => 'Você já utilizou a ajuda nesta partida.'], 422);
-        }
-
-        $letrasPalavra = array_unique(str_split($jogo['palavra']));
-        $ocultas = array_values(array_diff($letrasPalavra, $jogo['letras_certas']));
-
-        if (empty($ocultas)) {
-            $this->json(['erro' => 'Todas as letras já foram reveladas.'], 422);
-        }
-
-        $sorteada = $ocultas[array_rand($ocultas)];
-        $jogo['letras_certas'][] = $sorteada;
-        $jogo['usou_revelar'] = true;
-
-        $jogo = $this->verificarEncerramento($jogo);
-        Session::set('partida_atual', $jogo);
-
-        $this->json($this->montarEstadoPublico($jogo));
-    }
-
-    /** POST /jogo/abandonar -> encerra a partida na sessão sem salvar vitória */
+    /** Abandonar conta como derrota (0 pontos). */
     public function abandonar(): void
     {
-        Csrf::verifyOrFail();
-        Session::forget('partida_atual');
-        $this->sucesso('Partida abandonada.');
-        $this->redirect('dashboard');
+        $usuario = $this->exigirLogin();
+        if (!empty($_SESSION['jogo'])) {
+            $this->finalizar($usuario, $_SESSION['jogo'], true);
+            $this->redirect('/jogo/resultado');
+        }
+        $this->redirect('/mundos');
     }
 
-    /** GET /jogo/resultado/{id} -> tela final de vitória ou derrota */
-    public function resultado(int|string $id): void
+    /** Resultado da última partida (lido da sessão: recarregar não grava de novo). */
+    public function resultado(): void
     {
-        $partidaId = (int) $id;
-        $partida = Partida::find($partidaId);
-
-        if (!$partida || (int) $partida['usuario_id'] !== Auth::id()) {
-            $this->erro('Resultado de partida não encontrado.');
-            $this->redirect('dashboard');
+        $this->exigirLogin();
+        $resultado = $_SESSION['resultado'] ?? null;
+        if (!$resultado) {
+            $this->redirect('/inicio');
         }
-
-        $categoria = $partida['categoria_id'] ? Categoria::find((int) $partida['categoria_id']) : null;
-
-        $this->view('game/resultado', [
-            'titulo'    => ($partida['resultado'] === 'vitoria' ? 'Vitória!' : 'Fim de Jogo') . ' - Força dos Mundos',
-            'partida'   => $partida,
-            'categoria' => $categoria,
-        ]);
+        $this->render('game/resultado', [
+            'titulo'    => $resultado['vitoria'] ? 'Vitória!' : 'Fim de jogo',
+            'pagina'    => 'mundos',
+            'resultado' => $resultado,
+            'maxErros'  => ForcaJogo::MAX_ERROS,
+        ], 'game');
     }
 
-    private function verificarEncerramento(array $jogo): array
+    /**
+     * Encerra a partida: calcula pontos (somente aqui, no PHP), grava UMA vez
+     * e remove o estado da sessão para impedir gravação dupla.
+     */
+    private function finalizar(array $usuario, array $estado, bool $abandono): void
     {
-        $letrasUnicas = array_unique(str_split($jogo['palavra']));
-        $acertouTudo  = count(array_diff($letrasUnicas, $jogo['letras_certas'])) === 0;
-        $perdeu       = $jogo['erros'] >= self::MAX_ERROS;
+        $vitoria = !$abandono && $estado['status'] === 'vitoria';
+        $status = $vitoria ? 'vitoria' : 'derrota';
+        $erros = min((int) $estado['erros'], ForcaJogo::MAX_ERROS);
+        $pontos = ForcaJogo::calcularPontos($status, $erros);
 
-        if (!$acertouTudo && !$perdeu) {
-            return $jogo;
-        }
+        // Remove o estado ANTES de gravar: se o usuário recarregar, nada é regravado.
+        unset($_SESSION['jogo']);
 
-        // Grava apenas uma única vez
-        if (empty($jogo['finalizada'])) {
-            $jogo['finalizada'] = true;
+        (new Partida())->registrar(
+            (int) $usuario['id'],
+            (int) $estado['categoria_id'],
+            (int) $estado['palavra_id'],
+            $estado['palavra'],
+            $erros,
+            $pontos,
+            $status
+        );
 
-            if ($acertouTudo) {
-                $errosRestantes = max(0, self::MAX_ERROS - $jogo['erros']);
-                $pontos = 100 + ($errosRestantes * 20);
-                if (!empty($jogo['usou_revelar'])) {
-                    $pontos = max(10, $pontos - 30);
-                }
-                $resultado = 'vitoria';
-            } else {
-                $pontos = 0;
-                $resultado = 'derrota';
-            }
-
-            $partidaId = Partida::registrar(
-                (int) Auth::id(),
-                (int) $jogo['categoria_id'],
-                (int) $jogo['palavra_id'],
-                $jogo['palavra'],
-                (int) $jogo['erros'],
-                $pontos,
-                $resultado,
-                !empty($jogo['usou_revelar'])
-            );
-
-            $jogo['partida_id'] = $partidaId;
-        }
-
-        return $jogo;
-    }
-
-    /** Monta payload seguro (NUNCA envia a palavra completa enquanto finalizada == false) */
-    private function montarEstadoPublico(array $jogo): array
-    {
-        $mascara = [];
-        foreach (str_split($jogo['palavra']) as $char) {
-            $mascara[] = in_array($char, $jogo['letras_certas'], true) ? $char : null;
-        }
-
-        $errosRestantes = max(0, self::MAX_ERROS - $jogo['erros']);
-        $pontosPrevistos = 100 + ($errosRestantes * 20) - (!empty($jogo['usou_revelar']) ? 30 : 0);
-
-        return [
-            'categoria_id'     => $jogo['categoria_id'],
-            'categoria_nome'   => $jogo['categoria_nome'],
-            'dica'             => $jogo['dica'],
-            'mascara'          => $mascara,
-            'letras_certas'    => $jogo['letras_certas'],
-            'letras_erradas'   => $jogo['letras_erradas'],
-            'erros'            => $jogo['erros'],
-            'erros_restantes'  => $errosRestantes,
-            'usou_revelar'     => !empty($jogo['usou_revelar']),
-            'pontos_previstos' => max(0, $pontosPrevistos),
-            'finalizada'       => !empty($jogo['finalizada']),
-            'resultado_url'    => !empty($jogo['partida_id']) ? url('jogo/resultado/' . $jogo['partida_id']) : null,
+        $categoria = (new Categoria())->buscarPorId((int) $estado['categoria_id']);
+        $_SESSION['resultado'] = [
+            'vitoria'      => $vitoria,
+            'abandono'     => $abandono,
+            'palavra'      => $estado['palavra'],
+            'erros'        => $erros,
+            'pontos'       => $pontos,
+            'categoria_id' => (int) $estado['categoria_id'],
+            'categoria'    => $categoria['nome'] ?? '',
         ];
     }
 }

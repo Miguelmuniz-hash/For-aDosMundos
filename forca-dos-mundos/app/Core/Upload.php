@@ -1,54 +1,69 @@
 <?php
-declare(strict_types=1);
-
 namespace App\Core;
 
-/** Upload seguro de imagem: valida MIME real (finfo), tamanho, conteudo de imagem e gera nome aleatorio. */
-final class Upload
+/**
+ * Upload seguro de imagens: valida MIME real, tamanho e conteúdo,
+ * e grava com nome aleatório (nunca confia no nome enviado).
+ */
+class Upload
 {
-    /** @return array{ok:bool, arquivo?:string, erro?:string} */
-    public static function imagem(array $arquivo): array
+    private const TIPOS = [
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/webp' => 'webp',
+    ];
+    private const TAMANHO_MAXIMO = 2097152; // 2 MB
+
+    /**
+     * Salva a imagem de $_FILES[$campo] em public/uploads/$pasta.
+     * Retorna [nomeDoArquivo|null, erro|null].
+     */
+    public static function imagem(string $campo, string $pasta): array
     {
-        if (!isset($arquivo['error']) || is_array($arquivo['error'])) {
-            return ['ok' => false, 'erro' => 'Envio invalido.'];
-        }
-        if ($arquivo['error'] === UPLOAD_ERR_NO_FILE) {
-            return ['ok' => false, 'erro' => 'Selecione uma imagem.'];
+        $arquivo = $_FILES[$campo] ?? null;
+
+        if (!$arquivo || $arquivo['error'] === UPLOAD_ERR_NO_FILE) {
+            return [null, 'Selecione uma imagem.'];
         }
         if ($arquivo['error'] !== UPLOAD_ERR_OK) {
-            return ['ok' => false, 'erro' => 'Falha no upload (codigo ' . (int) $arquivo['error'] . ').'];
+            return [null, 'Falha no envio do arquivo. Tente novamente.'];
         }
-        $max = (int) Config::get('upload.max_bytes');
-        if ($arquivo['size'] > $max) {
-            return ['ok' => false, 'erro' => 'A imagem excede ' . round($max / 1048576, 1) . ' MB.'];
+        if ($arquivo['size'] > self::TAMANHO_MAXIMO) {
+            return [null, 'A imagem deve ter no máximo 2 MB.'];
         }
         if (!is_uploaded_file($arquivo['tmp_name'])) {
-            return ['ok' => false, 'erro' => 'Origem do arquivo invalida.'];
+            return [null, 'Arquivo inválido.'];
         }
 
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($arquivo['tmp_name']);
-        $permitidos = Config::get('upload.mimes');
-        if (!isset($permitidos[$mime]) || @getimagesize($arquivo['tmp_name']) === false) {
-            return ['ok' => false, 'erro' => 'Formato nao permitido. Use JPG, PNG ou WEBP.'];
+        // MIME real, lido pelo conteúdo do arquivo (não pela extensão).
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($arquivo['tmp_name']);
+        if (!isset(self::TIPOS[$mime])) {
+            return [null, 'Formato inválido. Use JPG, JPEG, PNG ou WEBP.'];
+        }
+        if (@getimagesize($arquivo['tmp_name']) === false) {
+            return [null, 'O arquivo não é uma imagem válida.'];
         }
 
-        $dir = (string) Config::get('upload.dir');
-        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
-            return ['ok' => false, 'erro' => 'Nao foi possivel criar a pasta de uploads.'];
+        $diretorio = BASE_PATH . '/public/uploads/' . $pasta;
+        if (!is_dir($diretorio)) {
+            mkdir($diretorio, 0755, true);
         }
-        $nome = bin2hex(random_bytes(16)) . '.' . $permitidos[$mime];
-        if (!move_uploaded_file($arquivo['tmp_name'], $dir . '/' . $nome)) {
-            return ['ok' => false, 'erro' => 'Nao foi possivel salvar a imagem.'];
+
+        $nome = bin2hex(random_bytes(16)) . '.' . self::TIPOS[$mime];
+        if (!move_uploaded_file($arquivo['tmp_name'], $diretorio . '/' . $nome)) {
+            return [null, 'Não foi possível salvar a imagem.'];
         }
-        return ['ok' => true, 'arquivo' => $nome];
+        return [$nome, null];
     }
 
-    public static function remover(?string $nome): void
+    /** Remove um arquivo antigo (com proteção contra caminhos maliciosos). */
+    public static function remover(?string $nome, string $pasta): void
     {
-        if (!$nome) {
+        if (!$nome || $nome !== basename($nome)) {
             return;
         }
-        $caminho = Config::get('upload.dir') . '/' . basename($nome);
+        $caminho = BASE_PATH . '/public/uploads/' . $pasta . '/' . $nome;
         if (is_file($caminho)) {
             @unlink($caminho);
         }

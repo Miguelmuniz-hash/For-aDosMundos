@@ -1,87 +1,121 @@
 <?php
-declare(strict_types=1);
-
 namespace App\Core;
 
-abstract class Controller
+use App\Models\Usuario;
+
+/**
+ * Controller base: renderização de views, redirecionamentos,
+ * proteção de rotas e controle de acesso por perfil.
+ */
+class Controller
 {
-    /** Renderiza uma view dentro de um layout. $view e relativo a app/Views (sem .php). */
-    protected function view(string $view, array $dados = [], ?string $layout = 'layouts/main'): void
+    private ?array $usuarioCache = null;
+
+    /** Renderiza uma view dentro de um layout. */
+    protected function render(string $view, array $dados = [], string $layout = 'app'): void
     {
-        $arquivo = VIEW_PATH . '/' . $view . '.php';
-        if (!is_file($arquivo)) {
-            Response::abort(500, 'View nao encontrada.', Config::get('app.debug') ? $view : null);
-        }
+        $dados['usuario'] = $dados['usuario'] ?? $this->usuarioLogado();
+        $dados['flashes'] = pull_flash();
+        extract($dados, EXTR_SKIP);
 
-        $render = static function (string $__arquivo, array $__dados): string {
-            extract($__dados, EXTR_SKIP);
-            ob_start();
-            require $__arquivo;
-            return (string) ob_get_clean();
-        };
+        ob_start();
+        require BASE_PATH . '/app/Views/' . $view . '.php';
+        $conteudo = ob_get_clean();
 
-        header('Content-Type: text/html; charset=utf-8');
-        $conteudo = $render($arquivo, $dados);
-        if ($layout === null) {
-            echo $conteudo;
-            return;
-        }
-        $arquivoLayout = VIEW_PATH . '/' . $layout . '.php';
-        if (!is_file($arquivoLayout)) {
-            Response::abort(500, 'Layout nao encontrado.', Config::get('app.debug') ? $layout : null);
-        }
-        echo $render($arquivoLayout, $dados + ['conteudo' => $conteudo]);
+        require BASE_PATH . '/app/Views/layouts/' . $layout . '.php';
     }
 
-    protected function redirect(string $caminho): never
+    public function renderizarErro(int $codigo): void
     {
-        redirect($caminho);
+        $this->render('errors/erro', ['codigo' => $codigo], 'auth');
     }
 
-    protected function json(array $dados, int $status = 200): never
+    protected function redirect(string $caminho): void
     {
-        Response::json($dados, $status);
+        header('Location: ' . url($caminho));
+        exit;
     }
 
-    /** Valor de $_POST (texto aparado) ou padrao. */
+    protected function json(array $dados, int $status = 200): void
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($dados, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /** A requisição espera JSON? (usada pelo JavaScript via fetch). */
+    public static function querJson(): bool
+    {
+        return stripos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
+    }
+
+    /** Lê um campo POST como texto aparado. */
     protected function post(string $campo, string $padrao = ''): string
     {
-        $v = $_POST[$campo] ?? $padrao;
-        return is_string($v) ? trim($v) : $padrao;
+        $valor = $_POST[$campo] ?? $padrao;
+        return is_string($valor) ? trim($valor) : $padrao;
     }
 
-    protected function query(string $campo, string $padrao = ''): string
+    /** Lê um campo GET como texto aparado. */
+    protected function get(string $campo, string $padrao = ''): string
     {
-        $v = $_GET[$campo] ?? $padrao;
-        return is_string($v) ? trim($v) : $padrao;
+        $valor = $_GET[$campo] ?? $padrao;
+        return is_string($valor) ? trim($valor) : $padrao;
     }
 
-    protected function sucesso(string $mensagem): void
+    /** Usuário logado (sempre relido do banco para refletir bloqueios e mudanças de perfil). */
+    protected function usuarioLogado(): ?array
     {
-        Session::flash('sucesso', $mensagem);
-    }
-
-    protected function erro(string $mensagem): void
-    {
-        Session::flash('erro', $mensagem);
-    }
-
-    /** Volta ao formulario com erros e valores antigos (senhas nunca sao reenviadas). */
-    protected function voltar(string $caminho, array $erros = [], bool $manterCampos = true): never
-    {
-        Session::flash('_errors', $erros);
-        if ($manterCampos) {
-            $old = $_POST;
-            foreach (['senha', 'senha_atual', 'nova_senha', 'confirmar_senha', 'senha_confirmacao', 'confirmar_nova_senha'] as $campoSensivel) {
-                unset($old[$campoSensivel]);
-            }
-            Session::flash('_old', $old);
+        if ($this->usuarioCache !== null) {
+            return $this->usuarioCache;
         }
-        redirect($caminho);
+        $id = $_SESSION['usuario_id'] ?? null;
+        if (!$id) {
+            return null;
+        }
+        $usuario = (new Usuario())->buscarPorId((int) $id);
+        if (!$usuario || $usuario['status'] !== 'ativo') {
+            return null;
+        }
+        unset($usuario['senha']);
+        return $this->usuarioCache = $usuario;
     }
 
-    protected function abort(int $codigo, string $mensagem = ''): never
+    /** Exige login. Sem sessão válida, manda para a tela de login. */
+    protected function exigirLogin(): array
     {
-        Response::abort($codigo, $mensagem);
+        $usuario = $this->usuarioLogado();
+        if (!$usuario) {
+            if (!empty($_SESSION['usuario_id'])) {
+                unset($_SESSION['usuario_id']);
+                flash('erro', 'Sua conta está desativada ou não existe mais.');
+            }
+            if (self::querJson() && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                $this->json(['ok' => false, 'mensagem' => 'Faça login novamente.'], 401);
+            }
+            $this->redirect('/login');
+        }
+        return $usuario;
+    }
+
+    /** Exige perfil de administrador (validado no servidor a cada requisição). */
+    protected function exigirAdmin(): array
+    {
+        $usuario = $this->exigirLogin();
+        if ($usuario['perfil'] !== 'admin') {
+            http_response_code(403);
+            $this->render('errors/erro', ['codigo' => 403], 'auth');
+            exit;
+        }
+        return $usuario;
+    }
+
+    /** Impede usuários logados de verem telas de visitante. */
+    protected function apenasVisitante(): void
+    {
+        if ($this->usuarioLogado()) {
+            $this->redirect('/inicio');
+        }
     }
 }

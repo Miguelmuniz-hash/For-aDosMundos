@@ -1,23 +1,24 @@
 <?php
-declare(strict_types=1);
-
 namespace App\Controllers;
 
-use App\Core\Auth;
 use App\Core\Controller;
 use App\Models\Partida;
 
-final class RankingController extends Controller
+/**
+ * Ranking geral (Top 10) e últimas partidas de quem está logado.
+ */
+class RankingController extends Controller
 {
     public function index(): void
     {
-        $top10   = Partida::topRanking(10);
-        $ultimas = Partida::ultimasDoUsuario((int) Auth::id(), 5);
+        $usuario = $this->exigirLogin();
+        $partidas = new Partida();
 
-        $this->view('ranking/index', [
-            'titulo'  => 'Ranking Geral - Força dos Mundos',
-            'top10'   => $top10,
-            'ultimas' => $ultimas,
+        $this->render('ranking/index', [
+            'titulo'  => 'Ranking',
+            'pagina'  => 'ranking',
+            'top'     => $partidas->top10(),
+            'ultimas' => $partidas->ultimasDoUsuario((int) $usuario['id'], 5),
         ]);
     }
 }

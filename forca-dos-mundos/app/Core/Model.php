@@ -1,67 +1,51 @@
 <?php
-declare(strict_types=1);
-
 namespace App\Core;
 
 use PDO;
-use PDOStatement;
 
-/** Base dos Models: tudo via PDO com prepared statements. */
+/**
+ * Classe base dos Models: dá acesso ao PDO e atalhos de consulta.
+ * Todas as consultas usam prepared statements.
+ */
 abstract class Model
 {
-    protected static string $table = '';
+    protected PDO $db;
 
-    protected static function db(): PDO
+    public function __construct()
     {
-        return Database::pdo();
+        $this->db = Database::connection();
     }
 
-    protected static function run(string $sql, array $params = []): PDOStatement
+    /** Executa uma consulta e devolve todas as linhas. */
+    protected function buscarTodos(string $sql, array $params = []): array
     {
-        $st = self::db()->prepare($sql);
-        $st->execute($params);
-        return $st;
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 
-    protected static function fetchAll(string $sql, array $params = []): array
+    /** Executa uma consulta e devolve uma linha (ou null). */
+    protected function buscarUm(string $sql, array $params = []): ?array
     {
-        return self::run($sql, $params)->fetchAll();
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $linha = $stmt->fetch();
+        return $linha ?: null;
     }
 
-    protected static function fetchOne(string $sql, array $params = []): ?array
+    /** Executa uma consulta e devolve o primeiro valor da primeira linha. */
+    protected function valor(string $sql, array $params = [])
     {
-        $linha = self::run($sql, $params)->fetch();
-        return $linha === false ? null : $linha;
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn();
     }
 
-    protected static function fetchValue(string $sql, array $params = []): mixed
+    /** Executa INSERT/UPDATE/DELETE e devolve as linhas afetadas. */
+    protected function executar(string $sql, array $params = []): int
     {
-        $v = self::run($sql, $params)->fetchColumn();
-        return $v === false ? null : $v;
-    }
-
-    protected static function execute(string $sql, array $params = []): int
-    {
-        return self::run($sql, $params)->rowCount();
-    }
-
-    protected static function lastId(): int
-    {
-        return (int) self::db()->lastInsertId();
-    }
-
-    public static function find(int $id): ?array
-    {
-        return self::fetchOne('SELECT * FROM ' . static::$table . ' WHERE id = ? LIMIT 1', [$id]);
-    }
-
-    public static function count(): int
-    {
-        return (int) self::fetchValue('SELECT COUNT(*) FROM ' . static::$table);
-    }
-
-    public static function delete(int $id): bool
-    {
-        return self::execute('DELETE FROM ' . static::$table . ' WHERE id = ?', [$id]) > 0;
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
     }
 }

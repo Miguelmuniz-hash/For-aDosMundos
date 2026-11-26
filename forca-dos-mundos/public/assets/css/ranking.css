@@ -1,0 +1,67 @@
+/* =========================================================
+   RANKING: pódio e tabela
+   ========================================================= */
+.podio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    align-items: end;
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.podio-item {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.podio-item strong {
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+
+.podio-pontos {
+    color: var(--ouro);
+    font-weight: 800;
+}
+
+.podio-coroa {
+    height: 28px;
+    font-size: 1.5rem;
+    animation: flutuar 3s ease-in-out infinite;
+}
+
+.podio-base {
+    width: 100%;
+    display: grid;
+    place-items: center;
+    border-radius: 14px 14px 0 0;
+    font: 800 1.5rem var(--fonte-titulo);
+    background: linear-gradient(180deg, rgba(124, 92, 255, 0.5), rgba(124, 92, 255, 0.08));
+    border: 1px solid var(--borda);
+    border-bottom: 0;
+}
+
+.podio-1 .podio-base { height: 120px; background: linear-gradient(180deg, rgba(245, 199, 107, 0.6), rgba(245, 199, 107, 0.06)); color: var(--ouro); }
+.podio-2 .podio-base { height: 88px; background: linear-gradient(180deg, rgba(200, 210, 240, 0.4), rgba(200, 210, 240, 0.05)); }
+.podio-3 .podio-base { height: 66px; background: linear-gradient(180deg, rgba(205, 127, 50, 0.5), rgba(205, 127, 50, 0.05)); }
+.podio-1 .avatar { border-color: var(--ouro); box-shadow: 0 0 30px rgba(245, 199, 107, 0.5); }
+
+.jogador-celula {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+}
+
+.tabela-ranking tr.destaque-1 { background: linear-gradient(90deg, rgba(245, 199, 107, 0.16), transparent); }
+.tabela-ranking tr.destaque-2 { background: linear-gradient(90deg, rgba(200, 210, 240, 0.12), transparent); }
+.tabela-ranking tr.destaque-3 { background: linear-gradient(90deg, rgba(205, 127, 50, 0.14), transparent); }
+.tabela-ranking tr.eu td:first-child { box-shadow: inset 3px 0 var(--ciano); }
+
+@media (max-width: 560px) {
+    .podio-base { font-size: 1.1rem; }
+}

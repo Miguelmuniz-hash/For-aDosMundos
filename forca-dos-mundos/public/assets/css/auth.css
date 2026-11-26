@@ -1,0 +1,154 @@
+/* =========================================================
+   AUTENTICAÇÃO: login, cadastro, recuperação (tela dividida)
+   ========================================================= */
+.auth-layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    min-height: 100vh;
+}
+
+.auth-arte {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 36px 48px;
+    overflow: hidden;
+    background:
+        radial-gradient(600px 400px at 30% 40%, rgba(124, 92, 255, 0.35), transparent 70%),
+        linear-gradient(160deg, rgba(21, 28, 74, 0.7), rgba(7, 11, 30, 0.3));
+    border-right: 1px solid var(--borda);
+}
+
+.auth-logo {
+    text-decoration: none;
+}
+
+.auth-cena {
+    display: grid;
+    place-items: center;
+}
+
+.cena-svg {
+    width: min(520px, 100%);
+    height: auto;
+    filter: drop-shadow(0 20px 60px rgba(124, 92, 255, 0.45));
+}
+
+.cena-planeta {
+    animation: flutuar 7s ease-in-out infinite;
+    transform-origin: 260px 230px;
+}
+
+.cena-lua {
+    animation: flutuar 5s ease-in-out infinite reverse;
+}
+
+.cena-constelacao {
+    animation: piscar 4s ease-in-out infinite;
+}
+
+@keyframes piscar {
+    50% { opacity: 0.35; }
+}
+
+.auth-frase h2 {
+    font-size: 1.9rem;
+    margin-bottom: 8px;
+}
+
+.auth-frase p {
+    color: var(--suave);
+    max-width: 440px;
+    margin: 0;
+}
+
+.auth-painel {
+    display: grid;
+    place-items: center;
+    padding: 32px 24px;
+}
+
+.auth-logo-mobile {
+    display: none;
+}
+
+.auth-caixa {
+    width: min(440px, 100%);
+    padding: 34px;
+    background: rgba(13, 19, 52, 0.78);
+    border: 1px solid var(--borda);
+    border-radius: 24px;
+    box-shadow: var(--sombra);
+    backdrop-filter: blur(14px);
+    animation: paginaEntrar 0.6s ease both;
+}
+
+.auth-cabecalho {
+    margin-bottom: 22px;
+}
+
+.auth-cabecalho h1 {
+    font-size: 1.9rem;
+    margin: 6px 0;
+}
+
+.auth-cabecalho p {
+    color: var(--suave);
+    margin: 0;
+}
+
+.auth-etiqueta {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ouro);
+}
+
+.auth-rodape {
+    text-align: center;
+    margin: 22px 0 0;
+    color: var(--suave);
+}
+
+.erro-cabecalho {
+    text-align: center;
+}
+
+.erro-codigo {
+    display: block;
+    font: 800 5rem var(--fonte-titulo);
+    background: linear-gradient(135deg, var(--ciano), var(--roxo));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+}
+
+@media (max-width: 900px) {
+    .auth-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-arte {
+        display: none;
+    }
+
+    .auth-painel {
+        align-content: center;
+        gap: 22px;
+    }
+
+    .auth-logo-mobile {
+        display: block;
+    }
+
+    .auth-caixa {
+        padding: 26px 22px;
+    }
+}

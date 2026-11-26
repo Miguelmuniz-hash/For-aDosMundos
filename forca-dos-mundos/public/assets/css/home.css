@@ -1,0 +1,461 @@
+/* =========================================================
+   INÍCIO / COMPONENTES DE PAINEL (cards, gráficos, mundos)
+   ========================================================= */
+.hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+    padding: 34px;
+    border-radius: 24px;
+    border: 1px solid var(--borda);
+    background:
+        radial-gradient(500px 260px at 90% 0%, rgba(34, 211, 238, 0.22), transparent 70%),
+        radial-gradient(500px 300px at 0% 100%, rgba(168, 85, 247, 0.3), transparent 70%),
+        rgba(255, 255, 255, 0.03);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+}
+
+.hero-compacto {
+    grid-template-columns: 1fr;
+    padding: 26px 30px;
+}
+
+.hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    margin: 6px 0 10px;
+}
+
+.hero p {
+    color: var(--suave);
+    max-width: 560px;
+}
+
+.texto-ouro {
+    color: var(--ouro);
+}
+
+.hero-botoes {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.hero-perfil {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    min-width: 190px;
+    text-align: center;
+}
+
+.hero-perfil small {
+    color: var(--suave);
+}
+
+.secao-titulo {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+}
+
+.secao-titulo h2 {
+    font-size: 1.35rem;
+    margin: 0;
+}
+
+/* Cards estatísticos */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.stats-8 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.stat {
+    padding: 18px 20px;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.stat:hover {
+    transform: translateY(-4px);
+    border-color: rgba(124, 92, 255, 0.5);
+}
+
+.stat-rotulo {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--suave);
+}
+
+.stat-valor {
+    display: block;
+    margin-top: 4px;
+    font: 800 2rem var(--fonte-titulo);
+}
+
+.grade-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.grade-3 {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 20px;
+}
+
+/* Gráfico de rosca (CSS puro, valores vêm do PHP) */
+.rosca-area {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    flex-wrap: wrap;
+}
+
+.rosca {
+    --pct: 0;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--ok) calc(var(--pct) * 1%), rgba(255, 93, 122, 0.55) 0);
+    box-shadow: 0 0 40px rgba(61, 220, 151, 0.18);
+}
+
+.rosca-centro {
+    width: 106px;
+    height: 106px;
+    border-radius: 50%;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    background: #0d1330;
+}
+
+.rosca-centro strong {
+    font: 800 1.6rem var(--fonte-titulo);
+}
+
+.rosca-centro small {
+    color: var(--suave);
+}
+
+.legenda {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.ponto {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.ponto-ok { background: var(--ok); }
+.ponto-perigo { background: rgba(255, 93, 122, 0.8); }
+
+/* Gráfico de barras */
+.barras {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 180px;
+}
+
+.barras-baixas {
+    height: 170px;
+}
+
+.barra-coluna {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.barra-valor {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--suave);
+}
+
+.barra-coluna small {
+    font-size: 0.7rem;
+    color: var(--suave);
+}
+
+.barra {
+    width: 100%;
+    height: var(--altura);
+    max-height: 78%;
+    border-radius: 8px 8px 3px 3px;
+    transform-origin: bottom;
+    animation: crescer 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.barra-ok { background: linear-gradient(180deg, var(--ciano), var(--violeta)); }
+.barra-perigo { background: linear-gradient(180deg, #ff8fa5, #b3294a); }
+
+@keyframes crescer {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+}
+
+/* Barras horizontais */
+.hbarras {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+}
+
+.hbarras li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.hbarra {
+    grid-column: 1 / -1;
+    height: 8px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+    order: 3;
+}
+
+.hbarra i {
+    display: block;
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--violeta), var(--ciano));
+}
+
+.lista-top,
+.lista-simples {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.lista-top li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.lista-top-nome {
+    flex: 1;
+    font-weight: 800;
+}
+
+.lista-top-nome small {
+    display: block;
+    font-weight: 600;
+    color: var(--suave);
+}
+
+.lista-simples li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(170, 180, 255, 0.07);
+}
+
+.posicao {
+    font: 800 1rem var(--fonte-titulo);
+    color: var(--ouro);
+    min-width: 34px;
+}
+
+/* ---------- Mundos (categorias) ---------- */
+.mundos-grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
+    justify-content: center;
+    gap: 20px;
+}
+
+.mundo {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid var(--borda);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: var(--sombra);
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+
+.mundo:hover {
+    transform: translateY(-6px);
+    border-color: rgba(245, 199, 107, 0.55);
+    box-shadow: 0 22px 54px rgba(124, 92, 255, 0.3);
+}
+
+.mundo-arte {
+    position: relative;
+    height: 140px;
+    display: grid;
+    place-items: center;
+    background-size: cover;
+    background-position: center;
+    background-color: #1a2160;
+    background-image:
+        radial-gradient(circle at 20% 25%, #fff 0 1px, transparent 2px),
+        radial-gradient(circle at 75% 35%, #fff 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 60% 80%, #fff 0 1px, transparent 2px),
+        radial-gradient(260px 160px at 70% 20%, rgba(34, 211, 238, 0.45), transparent 70%),
+        linear-gradient(135deg, #2a1f7a, #0c1240);
+}
+
+.mundo-castelo { background-image: radial-gradient(circle at 25% 30%, #fff 0 1px, transparent 2px), radial-gradient(260px 160px at 30% 20%, rgba(255, 170, 80, 0.4), transparent 70%), linear-gradient(135deg, #5a1f8a, #1a0f40); }
+.mundo-folha { background-image: radial-gradient(circle at 70% 30%, #fff 0 1px, transparent 2px), radial-gradient(260px 160px at 70% 20%, rgba(61, 220, 151, 0.4), transparent 70%), linear-gradient(135deg, #0f5a58, #08203a); }
+.mundo-estrela { background-image: radial-gradient(260px 160px at 50% 30%, rgba(245, 199, 107, 0.4), transparent 70%), linear-gradient(135deg, #3a2a8a, #0c1240); }
+.mundo-lua { background-image: radial-gradient(260px 160px at 50% 30%, rgba(190, 200, 255, 0.35), transparent 70%), linear-gradient(135deg, #1f2a6a, #080c28); }
+.mundo-foguete { background-image: radial-gradient(260px 160px at 50% 30%, rgba(255, 93, 122, 0.35), transparent 70%), linear-gradient(135deg, #2a1f7a, #0c1240); }
+
+.mundo-icone {
+    width: 74px;
+    height: 74px;
+    padding: 14px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--ouro);
+    background: rgba(7, 11, 30, 0.55);
+    border: 1px solid rgba(245, 199, 107, 0.5);
+    backdrop-filter: blur(6px);
+    animation: flutuar 5s ease-in-out infinite;
+}
+
+.icone-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.mundo-corpo {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.mundo-corpo h3 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.mundo-corpo p {
+    color: var(--suave);
+    font-size: 0.9rem;
+    margin: 0;
+    flex: 1;
+}
+
+.mundo-rodape {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.mundo-rodape form {
+    margin: 0;
+}
+
+@media (max-width: 1000px) {
+    .stats,
+    .stats-8 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grade-2,
+    .grade-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero {
+        grid-template-columns: 1fr;
+        padding: 24px 20px;
+    }
+
+    .hero-perfil {
+        display: none;
+    }
+}
+
+/* Tabelas viram "cartões" no celular */
+@media (max-width: 680px) {
+    .tabela thead {
+        display: none;
+    }
+
+    .tabela,
+    .tabela tbody,
+    .tabela tr,
+    .tabela td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabela tr {
+        padding: 10px 6px;
+        border-bottom: 1px solid var(--borda);
+    }
+
+    .tabela td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 10px;
+        border: 0;
+        text-align: right;
+    }
+
+    .tabela td[data-rotulo]::before {
+        content: attr(data-rotulo);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--suave);
+        text-align: left;
+    }
+
+    .col-acoes {
+        justify-content: flex-end;
+    }
+}

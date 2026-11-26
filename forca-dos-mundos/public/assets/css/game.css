@@ -1,0 +1,595 @@
+/* =========================================================
+   JOGO: tela da partida e tela de resultado
+   ========================================================= */
+.game-body {
+    min-height: 100vh;
+}
+
+.game-header {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    border-bottom: 1px solid var(--borda);
+    background: rgba(7, 11, 30, 0.7);
+    backdrop-filter: blur(12px);
+}
+
+.game-logo {
+    text-decoration: none;
+}
+
+.game-main {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 26px 20px 60px;
+}
+
+.jogo-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.chip-categoria {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 18px 8px 8px;
+    border-radius: 99px;
+    border: 1px solid rgba(245, 199, 107, 0.45);
+    background: rgba(245, 199, 107, 0.07);
+}
+
+.chip-categoria small {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--suave);
+    line-height: 1;
+}
+
+.chip-categoria strong {
+    font-family: var(--fonte-titulo);
+}
+
+.chip-icone {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 50%;
+    color: var(--ouro);
+    background: rgba(7, 11, 30, 0.6);
+}
+
+.jogo-grade {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 22px;
+    align-items: start;
+}
+
+.forca-card {
+    display: grid;
+    gap: 14px;
+    justify-items: center;
+}
+
+.forca-svg {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    filter: drop-shadow(0 10px 30px rgba(124, 92, 255, 0.35));
+}
+
+/* Cada parte do boneco "se desenha" com transição suave */
+.parte line,
+.parte circle {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transition: stroke-dashoffset 0.7s ease;
+}
+
+.parte.on line,
+.parte.on circle {
+    stroke-dashoffset: 0;
+}
+
+.forca-svg.tremer {
+    animation: tremer 0.45s ease;
+}
+
+@keyframes tremer {
+    20% { transform: translateX(-7px) rotate(-1.5deg); }
+    40% { transform: translateX(7px) rotate(1.5deg); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+}
+
+.vidas {
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+}
+
+.vidas-orbes {
+    display: flex;
+    gap: 8px;
+}
+
+.vida {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #aaf0ff, var(--violeta));
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.7);
+    transition: all 0.4s;
+}
+
+.vida.perdida {
+    background: #2a3263;
+    box-shadow: none;
+    transform: scale(0.7);
+}
+
+.vidas-texto {
+    font-weight: 700;
+    color: var(--suave);
+}
+
+.vidas-texto strong {
+    color: var(--texto);
+    font-size: 1.1rem;
+}
+
+.jogo-centro {
+    display: grid;
+    gap: 20px;
+}
+
+.palavra-card {
+    display: grid;
+    gap: 22px;
+    text-align: center;
+}
+
+.dica {
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1px dashed rgba(245, 199, 107, 0.5);
+    background: rgba(245, 199, 107, 0.06);
+}
+
+.dica p {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.dica-selo {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ouro);
+}
+
+.palavra,
+.resultado-palavra {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.slot {
+    width: clamp(30px, 6vw, 48px);
+    height: clamp(40px, 8vw, 60px);
+    display: grid;
+    place-items: center;
+    border-bottom: 4px solid var(--ciano);
+    border-radius: 8px 8px 2px 2px;
+    background: rgba(8, 12, 36, 0.6);
+    font: 800 clamp(1.3rem, 4vw, 2rem) var(--fonte-titulo);
+    color: var(--ouro);
+    transition: background 0.3s;
+}
+
+.slot.revelada {
+    background: rgba(124, 92, 255, 0.28);
+    border-bottom-color: var(--ouro);
+    animation: revelar 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+    text-shadow: 0 0 18px rgba(245, 199, 107, 0.8);
+}
+
+@keyframes revelar {
+    from { transform: translateY(-14px) scale(0.6); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
+.progresso {
+    display: grid;
+    gap: 6px;
+}
+
+.progresso small {
+    color: var(--suave);
+    font-weight: 700;
+}
+
+.progresso-trilho {
+    height: 8px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+}
+
+.progresso-barra {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--violeta), var(--ciano));
+    transition: width 0.5s ease;
+}
+
+/* Teclado virtual */
+.teclado {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));
+    gap: 8px;
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.tecla {
+    height: 50px;
+    border-radius: 12px;
+    border: 1px solid var(--borda);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+    color: var(--texto);
+    font: 800 1.1rem var(--fonte-titulo);
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+}
+
+.tecla:hover:not(:disabled) {
+    transform: translateY(-3px);
+    background: rgba(124, 92, 255, 0.35);
+    box-shadow: 0 8px 20px rgba(124, 92, 255, 0.35);
+}
+
+.tecla:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.tecla:disabled {
+    cursor: not-allowed;
+}
+
+.tecla.acertou {
+    background: rgba(61, 220, 151, 0.28);
+    border-color: var(--ok);
+    color: #b5f5d9;
+}
+
+.tecla.errou {
+    background: rgba(255, 93, 122, 0.14);
+    border-color: rgba(255, 93, 122, 0.5);
+    color: #ff9db0;
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.teclado.bloqueado {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* ---------- Resultado ---------- */
+/* Uma única coluna, centralizada na horizontal e (em telas altas) na vertical. */
+.resultado {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    width: 100%;
+    max-width: 640px;
+    min-height: calc(100vh - 150px);
+    margin: 0 auto;
+}
+
+.resultado-card {
+    width: 100%;
+    text-align: center;
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    padding: 34px 28px 30px;
+}
+
+.resultado-card h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+}
+
+.resultado-msg {
+    margin: 0;
+    max-width: 440px;
+    color: var(--suave);
+}
+
+.resultado-selo {
+    padding: 5px 16px;
+    border-radius: 99px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.resultado-vitoria .resultado-selo {
+    background: rgba(61, 220, 151, 0.15);
+    color: var(--ok);
+    border: 1px solid rgba(61, 220, 151, 0.5);
+}
+
+.resultado-derrota .resultado-selo {
+    background: rgba(255, 93, 122, 0.15);
+    color: var(--perigo);
+    border: 1px solid rgba(255, 93, 122, 0.5);
+}
+
+.resultado-vitoria .resultado-card {
+    box-shadow: 0 0 80px rgba(61, 220, 151, 0.2), var(--sombra);
+}
+
+.resultado-derrota .resultado-card {
+    box-shadow: 0 0 80px rgba(255, 93, 122, 0.15), var(--sombra);
+}
+
+/* Emblema no topo do card: troféu (vitória) ou forca (derrota) */
+.resultado-emblema {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+}
+
+.trofeu-svg {
+    width: 120px;
+    height: 120px;
+    filter: drop-shadow(0 8px 28px rgba(245, 199, 107, 0.55));
+    animation: trofeuEntrar 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+.trofeu-aureola {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pulsar 3.2s ease-in-out infinite;
+}
+
+@keyframes trofeuEntrar {
+    from { opacity: 0; transform: translateY(18px) scale(0.6) rotate(-6deg); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes pulsar {
+    50% { transform: scale(1.06); opacity: 0.7; }
+}
+
+.resultado-estrelas {
+    display: flex;
+    gap: 8px;
+}
+
+.estrela {
+    width: 30px;
+    height: 30px;
+    fill: rgba(154, 163, 209, 0.16);
+    stroke: rgba(154, 163, 209, 0.35);
+    stroke-width: 1;
+    stroke-linejoin: round;
+    animation: estrelaEntrar 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+
+.estrela.acesa {
+    fill: var(--ouro);
+    stroke: #b8862b;
+    filter: drop-shadow(0 0 8px rgba(245, 199, 107, 0.8));
+}
+
+@keyframes estrelaEntrar {
+    from { opacity: 0; transform: scale(0) rotate(-90deg); }
+    to { opacity: 1; transform: none; }
+}
+
+.resultado-forca {
+    width: 150px;
+}
+
+.resultado-forca .forca-svg {
+    max-width: 150px;
+    filter: drop-shadow(0 8px 24px rgba(255, 93, 122, 0.3));
+}
+
+.resultado-palavra {
+    margin: 4px 0;
+}
+
+.resultado-palavra .slot {
+    width: clamp(28px, 7vw, 44px);
+    height: clamp(38px, 9vw, 56px);
+}
+
+.resultado-derrota .slot {
+    border-bottom-color: var(--perigo);
+    color: #ffb0bf;
+    text-shadow: none;
+}
+
+.resultado-dados {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.resultado-dados div {
+    display: grid;
+    align-content: center;
+    gap: 2px;
+    min-height: 74px;
+    padding: 12px 8px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--borda);
+}
+
+.resultado-dados small {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--suave);
+}
+
+.resultado-dados strong {
+    font: 800 1.5rem var(--fonte-titulo);
+    overflow-wrap: anywhere;
+}
+
+.resultado-dados div:last-child strong {
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+.resultado-formula {
+    margin: 0;
+    padding: 6px 16px;
+    border-radius: 99px;
+    border: 1px dashed rgba(245, 199, 107, 0.45);
+    background: rgba(245, 199, 107, 0.06);
+    color: #ffe9b0;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.resultado-botoes {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.resultado-botoes form {
+    margin: 0;
+}
+
+/* Efeitos: confete (vitória) e estrelas caindo (derrota) */
+.resultado-efeitos {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.confete {
+    position: absolute;
+    top: -20px;
+    width: 10px;
+    height: 16px;
+    border-radius: 2px;
+    animation: cair linear forwards;
+}
+
+.estrela-cai {
+    position: absolute;
+    top: -20px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9aa3d1;
+    box-shadow: 0 0 10px #9aa3d1;
+    animation: cair linear forwards;
+}
+
+@keyframes cair {
+    to {
+        transform: translateY(110vh) rotate(720deg);
+        opacity: 0.2;
+    }
+}
+
+.resultado-derrota .resultado-forca .forca-svg {
+    animation: balancar 3s ease-in-out infinite;
+    /* ponto onde a corda prende na trave: (150, 28) num viewBox de 240x270 */
+    transform-origin: 62.5% 10.4%;
+}
+
+@keyframes balancar {
+    0%, 100% { transform: rotate(-1.5deg); }
+    50% { transform: rotate(1.5deg); }
+}
+
+@media (max-width: 900px) {
+    .jogo-grade {
+        grid-template-columns: 1fr;
+    }
+
+    .forca-svg {
+        max-width: 220px;
+    }
+
+    .game-header {
+        padding: 12px 16px;
+    }
+
+    .topbar-perfil span {
+        display: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .resultado {
+        min-height: 0;
+    }
+
+    .resultado-card {
+        padding: 26px 16px 24px;
+    }
+
+    .resultado-dados strong {
+        font-size: 1.25rem;
+    }
+
+    .resultado-dados small {
+        letter-spacing: 0.04em;
+    }
+
+    .resultado-botoes,
+    .resultado-botoes form,
+    .resultado-botoes .btn {
+        width: 100%;
+    }
+
+    .teclado {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+    }
+
+    .tecla {
+        height: 44px;
+        font-size: 1rem;
+    }
+}
